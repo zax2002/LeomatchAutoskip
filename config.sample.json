@@ -1,0 +1,12 @@
+{
+	"sessionFile": "sessions/zax2002",
+	"apiId": 0000000,
+	"apiHash": "",
+
+	"chatId": "leomatchbot",
+
+	"onLiking": "pass",
+	"onDisliking": "dislike",
+	"onMissed": "alert",
+	"onNew": "pass"
+}
