@@ -247,7 +247,7 @@ class Bot:
 		await self.client.run_until_disconnected()
 
 	def _defineListeners(self):
-		@self.client.on(events.NewMessage(chats="leomatchbot"))
+		@self.client.on(events.NewMessage(chats=self.config["chatId"]))
 		async def onMessage(event):
 			if event.out:
 				if event.message.message == "👎":
