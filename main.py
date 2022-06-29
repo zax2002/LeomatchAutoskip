@@ -224,8 +224,14 @@ class App:
 	# ----------------------------------------------------------------------------------------------
 
 	async def message(self, message):
-		await self.bot.client.send_message(self.config["chatId"], message)		
+		await self.bot.client.send_message(self.config["chatId"], message)
 
+	def checkSpam(self, message):
+		for spamSubstring, spamReply in self.config["spam"]:
+			if spamSubstring in message:
+				return spamReply
+
+		return None
 
 class Bot:
 	def __init__(self, app, sessionFile, apiId, apiHash):
@@ -247,8 +253,9 @@ class Bot:
 		await self.client.run_until_disconnected()
 
 	def _defineListeners(self):
-		@self.client.on(events.NewMessage(chats=self.config["chatId"]))
+		@self.client.on(events.NewMessage(chats=self.app.config["chatId"]))
 		async def onMessage(event):
+			# Исходящие вообщения когда я чёто делаю
 			if event.out:
 				if event.message.message == "👎":
 					await self.app.onReaction(ReactionType.DISLIKE)
@@ -256,15 +263,21 @@ class Bot:
 				elif event.message.message == "❤️":
 					await self.app.onReaction(ReactionType.LIKE)
 
+			# Входящее
 			else:
+				# Если это сообщение с анкетой, чекаем регуляркой
 				if self.profileMessageRegex.match(event.message.message):
 					await self.app.onProfileRaw(event.message.message)
 
+				# Если пришло такое сообщение это значит я перед этим отправил лайк с сообщением, типа тоже исходящий лайк ивент вот да
 				elif event.message.message == "Лайк отправлен, ждем ответа.":
 					await self.app.onReaction(ReactionType.LIKE)
 
-				elif "Дайвинчик всегда доступен в VK и Telegram" in event.message.message:
-					await self.app.message("Анкеты в Telegram")
+				# Чекаем что если сообщение это спам
+				else:
+					spamReply = self.app.checkSpam(event.message.message)
+					if not spamReply is None:
+						await self.app.message(spamReply)
 
 app = App()
 asyncio.run(app.start())
