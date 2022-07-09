@@ -5,7 +5,6 @@ import hashlib
 import json5
 import collections
 import asyncio
-import win10toast
 
 from threading import Thread, Lock
 from enum import Enum
@@ -36,7 +35,9 @@ class Profile:
 
 class App:
 	def __init__(self):
-		self.toastNotifier = win10toast.ToastNotifier()
+		if os.name == "nt":
+			import win10toast
+			self.toastNotifier = win10toast.ToastNotifier()
 
 		self.connection = sqlite3.connect("profies.db", check_same_thread=False)
 		with open("schema.sql", "r") as f:
@@ -216,7 +217,9 @@ class App:
 		print("Action DISLIKE")
 
 	async def _alert(self, title, text):
-		self.toastNotifier.show_toast(title, text, duration=5, threaded=True)
+		if os.name == "nt":
+			self.toastNotifier.show_toast(title, text, duration=5, threaded=True)
+		
 		print(f"Action ALERT {text}")
 
 	async def _pass(self):
