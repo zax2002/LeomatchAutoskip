@@ -45,6 +45,7 @@ class App:
 		self.dbLock = Lock()
 
 		self.config = json5.load(open("config.json"))
+		self.spamPatterns = json5.load(open("spam.json"))
 
 		self.history = collections.deque(maxlen=10)
 
@@ -227,7 +228,7 @@ class App:
 		await self.bot.client.send_message(self.config["chatId"], message)
 
 	def checkSpam(self, message):
-		for spamSubstring, spamReply in self.config["spam"]:
+		for spamSubstring, spamReply in self.spamPatterns:
 			if spamSubstring in message:
 				return spamReply
 

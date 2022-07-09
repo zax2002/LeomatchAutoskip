@@ -13,15 +13,7 @@
 	"onLiking":		"pass",
 	"onDisliking":	"dislike",
 	"onMissed":		"alert",
-	"onNew":		"pass",
-
-	// Автоответ на мусор а ты знал что давинчик есть ещё в контакте А? А?ААААА!?!?!?!? нет не знал спасибо большое идите в пень уважаемый вы лошадь вообще
-	// ["часть сообщения чтоб определить мусор", "ответ"]
-	"spam": [
-		["Дайвинчик всегда доступен в VK и Telegram", "Анкеты в Telegram"],
-		["Do you want more views on TikTok", "Continue looking"],
-		["❗️ Keep in mind: some people can impersonate others", "Continue looking"]
-	]
+	"onNew":		"pass"
 }
 
 
