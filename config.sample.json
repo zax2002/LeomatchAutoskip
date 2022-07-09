@@ -19,7 +19,8 @@
 	// ["часть сообщения чтоб определить мусор", "ответ"]
 	"spam": [
 		["Дайвинчик всегда доступен в VK и Telegram", "Анкеты в Telegram"],
-		["Do you want more views on TikTok", "Continue looking"]
+		["Do you want more views on TikTok", "Continue looking"],
+		["❗️ Keep in mind: some people can impersonate others", "Continue looking"]
 	]
 }
 
