@@ -45,14 +45,16 @@ class App:
 
 		self.dbLock = Lock()
 
-		self.config = json5.load(open("config.json"))
-		self.spamPatterns = json5.load(open("spam.json"))
+		self.config = json5.load(open("config.json", encoding="utf-8"))
+		self.spamPatterns = json5.load(open("spam.json", encoding="utf-8"))
 
 		self.history = collections.deque(maxlen=10)
 
 		self.bot = Bot(self, self.config["sessionFile"], self.config["apiId"], self.config["apiHash"])
 
 	async def start(self):
+		self.locationRegex = re.compile(f", 📍\d+ (km|км)")
+
 		await self.bot.start()
 
 	async def console(self):
@@ -139,6 +141,8 @@ class App:
 	# ----------------------------------------------------------------------------------------------
 
 	async def onProfileRaw(self, text):
+		text = self.locationRegex.sub(f', {self.config["city"]}', text)
+
 		profile = await self.getProfile(text)
 
 		self.history.append(profile)
@@ -245,7 +249,7 @@ class Bot:
 		self.apiId = apiId
 		self.apiHash = apiHash
 
-		self.profileMessageRegex = re.compile(r"^.*, \d+, \S+( – .*|)$", re.S)
+		self.profileMessageRegex = re.compile(r"^.*, \d+, (\S+|📍\d+ km|📍\d+ км)( – .*|)$", re.S)
 
 	async def start(self):
 		self.client = TelegramClient(self.sessionFile, self.apiId, self.apiHash)
