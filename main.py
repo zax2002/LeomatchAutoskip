@@ -9,6 +9,7 @@ import asyncio
 from threading import Thread, Lock
 from enum import Enum
 from telethon import TelegramClient, events
+from telethon.tl.functions.messages import SendReactionRequest
 
 class ProfileType(Enum):
 	LIKING = 0
@@ -149,45 +150,57 @@ class App:
 
 		print(f"Profile {profile.text}; {profile.type if not profile.type is None else 'New'}")
 
+		reaction = None
+
 		if profile.type == ProfileType.LIKING:
-			if self.config["onLiking"] == "dislike":
+			action, reaction = self.config["onLiking"]["action"], self.config["onLiking"]["reaction"]
+			
+			if action == "dislike":
 				await self._dislike()
-			elif self.config["onLiking"] == "like":
+			elif action == "like":
 				await self._like()
-			elif self.config["onLiking"] == "alert":
+			elif action == "alert":
 				await self._alert("LIKING", "❤️")
-			elif self.config["onLiking"] == "pass":
+			elif action == "pass":
 				await self._pass()
 
 		elif profile.type == ProfileType.DISLIKING:
-			if self.config["onDisliking"] == "dislike":
+			action, reaction = self.config["onDisliking"]["action"], self.config["onDisliking"]["reaction"]
+			
+			if action == "dislike":
 				await self._dislike()
-			elif self.config["onDisliking"] == "like":
+			elif action == "like":
 				await self._like()
-			elif self.config["onDisliking"] == "alert":
+			elif action == "alert":
 				await self._alert("DISLIKING", "👎")
-			elif self.config["onDisliking"] == "pass":
+			elif action == "pass":
 				await self._pass()
 
 		elif profile.type == ProfileType.MISSED:
-			if self.config["onMissed"] == "dislike":
+			action, reaction = self.config["onMissed"]["action"], self.config["onMissed"]["reaction"]
+
+			if action == "dislike":
 				await self._dislike()
-			elif self.config["onMissed"] == "like":
+			elif action == "like":
 				await self._like()
-			elif self.config["onMissed"] == "alert":
+			elif action == "alert":
 				await self._alert("MISSED", "👁‍🗨")
-			elif self.config["onMissed"] == "pass":
+			elif action == "pass":
 				await self._pass()	
 
 		elif profile.type is None:
-			if self.config["onNew"] == "dislike":
+			action, reaction = self.config["onNew"]["action"], self.config["onNew"]["reaction"]
+			
+			if action == "dislike":
 				await self._dislike()
-			elif self.config["onNew"] == "like":
+			elif action == "like":
 				await self._like()
-			elif self.config["onNew"] == "alert":
+			elif action == "alert":
 				await self._alert("NEW", "➕")
-			elif self.config["onNew"] == "pass":
-				await self._pass()	
+			elif action == "pass":
+				await self._pass()
+
+		return reaction
 
 	async def onReaction(self, reactionType):
 		print(f"Reaction {reactionType}")
@@ -260,6 +273,13 @@ class Bot:
 
 		await self.client.run_until_disconnected()
 
+	async def _sendReaction(self, message, reaction):
+		await self.client( SendReactionRequest(
+			peer = message.peer_id,
+			msg_id = message.id,
+			reaction = reaction
+		))
+
 	def _defineListeners(self):
 		@self.client.on(events.NewMessage(chats=self.app.config["chatId"]))
 		async def onMessage(event):
@@ -275,7 +295,9 @@ class Bot:
 			else:
 				# Если это сообщение с анкетой, чекаем регуляркой
 				if self.profileMessageRegex.match(event.message.message):
-					await self.app.onProfileRaw(event.message.message)
+					reaction = await self.app.onProfileRaw(event.message.message)
+					if not reaction is None:
+						await self._sendReaction(event.message, reaction)
 
 				# Если пришло такое сообщение это значит я перед этим отправил лайк с сообщением, типа тоже исходящий лайк ивент вот да
 				elif event.message.message == "Лайк отправлен, ждем ответа.":
