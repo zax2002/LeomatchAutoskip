@@ -6,8 +6,8 @@ import json5
 import collections
 import asyncio
 
-from threading import Thread, Lock
 from enum import Enum
+from threading import Lock
 from telethon import TelegramClient, events
 from telethon.tl.functions.messages import SendReactionRequest
 
@@ -16,7 +16,7 @@ class ProfileType(Enum):
 	DISLIKING = 1
 	MISSED = 2
 
-class ReactionType(Enum):
+class ActionType(Enum):
 	LIKE = 0
 	DISLIKE = 1
 	MISS = 2
@@ -64,7 +64,7 @@ class App:
 			try:
 				command, *args = (await loop.run_in_executor(None, input, "> ")).split(" ")
 
-				if command in ("miss", "missed"):
+				if command in ("m", "miss", "missed"):
 					index = 1
 
 					try:
@@ -82,10 +82,10 @@ class App:
 				elif command in ("exit", "stop"):
 					os._exit(0)
 
-				elif command == "like":
+				elif command in ("like", "l", "<3"):
 					await app._like()
 
-				elif command == "dislike":
+				elif command in ("dislike", "dis", "d"):
 					await app._dislike()
 
 				else:
@@ -108,12 +108,12 @@ class App:
 
 		return profile
 
-	async def addProfile(self, profile):
+	async def addOrUpdateProfile(self, profile):
 		cursor = self.connection.cursor()
 
 		with self.dbLock:
 			try:
-				cursor.execute("INSERT INTO profiles(hash,type) VALUES (?,?)", (profile.textHash, profile.type.value))
+				cursor.execute("INSERT OR REPLACE INTO profiles(hash, type) VALUES (?,?)", (profile.textHash, profile.type.value))
 			except sqlite3.IntegrityError as e:
 				print(f"Warn: {e}")
 
@@ -121,27 +121,22 @@ class App:
 
 	async def miss(self, index):
 		profile = self.history[-index - 1]
-		cursor = self.connection.cursor()
-		
-		with self.dbLock:
-			cursor.execute("UPDATE profiles SET type=? WHERE hash=?", (ProfileType.MISSED.value, profile.textHash))
-			self.connection.commit()
+		profile = Profile(profile.text, ProfileType.MISSED)
+
+		await self.addOrUpdateProfile(profile)
 
 		print(f'Marked "{profile.text}" as missed')
 
 	async def missText(self, text):
 		profile = Profile(text, ProfileType.MISSED)
-		cursor = self.connection.cursor()
 
-		with self.dbLock:
-			cursor.execute("INSERT OR REPLACE INTO profiles(hash, type) VALUES (?,?)", (profile.textHash, profile.type.value))
-			self.connection.commit()
+		await self.addOrUpdateProfile(profile)
 
 		print(f'Marked "{profile.text}" as missed')
 
 	# ----------------------------------------------------------------------------------------------
 
-	async def onProfileRaw(self, text):
+	async def onProfileRaw(self, text, reactionCallback):
 		text = self.locationRegex.sub(f', {self.config["city"]}', text)
 
 		profile = await self.getProfile(text)
@@ -200,10 +195,11 @@ class App:
 			elif action == "pass":
 				await self._pass()
 
-		return reaction
+		if not reaction is None:
+			await reactionCallback(reaction)
 
-	async def onReaction(self, reactionType):
-		print(f"Reaction {reactionType}")
+	async def onAction(self, actionType):
+		print(f"Action {actionType}")
 
 		if len(self.history) == 0:
 			print("Empty history")
@@ -214,12 +210,35 @@ class App:
 		if not profile.type in (None, ProfileType.MISSED):
 			return
 
-		if reactionType == ReactionType.LIKE:
+		if actionType == ActionType.LIKE:
 			profile.type = ProfileType.LIKING
-		elif reactionType == ReactionType.DISLIKE:
+		elif actionType == ActionType.DISLIKE:
 			profile.type = ProfileType.DISLIKING
 
-		await self.addProfile(profile)
+		await self.addOrUpdateProfile(profile)
+
+	async def onReaction(self, reaction, text, reactionCallback):
+		if not self.config["reactionControls"]["enabled"]:
+			return
+
+		if reaction in (self.config["reactionControls"]["miss"], self.config["reactionControls"]["dislike"]):
+			text = self.locationRegex.sub(f', {self.config["city"]}', text)
+			profile = await self.getProfile(text)
+
+			if reaction == self.config["reactionControls"]["miss"]:
+				profile.type = ProfileType.MISSED
+				print(f'Missed using reaction "{text}"')
+
+			elif reaction == self.config["reactionControls"]["dislike"]:
+				profile.type = ProfileType.DISLIKING
+				print(f'Disliked using reaction "{text}"')
+			
+			await self.addOrUpdateProfile(profile)
+
+			await asyncio.sleep(1)
+			await reactionCallback(self.config["reactionControls"]["success"])
+			await asyncio.sleep(1)
+			await reactionCallback("")
 
 	# ----------------------------------------------------------------------------------------------
 
@@ -281,27 +300,38 @@ class Bot:
 		))
 
 	def _defineListeners(self):
+		@self.client.on(events.MessageEdited(chats=self.app.config["chatId"]))
+		async def onMessageEdit(event):
+			if not event.message.reactions.recent_reactions is None:
+				reaction = event.message.reactions.recent_reactions[0].reaction
+			else:
+				reaction = ""
+
+			await self.app.onReaction(
+				reaction,
+				event.message.message,
+				lambda reaction: self._sendReaction(event.message, reaction)
+			)
+				
 		@self.client.on(events.NewMessage(chats=self.app.config["chatId"]))
 		async def onMessage(event):
 			# Исходящие вообщения когда я чёто делаю
 			if event.out:
 				if event.message.message == "👎":
-					await self.app.onReaction(ReactionType.DISLIKE)
+					await self.app.onAction(ActionType.DISLIKE)
 
 				elif event.message.message == "❤️":
-					await self.app.onReaction(ReactionType.LIKE)
+					await self.app.onAction(ActionType.LIKE)
 
 			# Входящее
 			else:
 				# Если это сообщение с анкетой, чекаем регуляркой
 				if self.profileMessageRegex.match(event.message.message):
-					reaction = await self.app.onProfileRaw(event.message.message)
-					if not reaction is None:
-						await self._sendReaction(event.message, reaction)
+					await self.app.onProfileRaw(event.message.message, lambda reaction: self._sendReaction(event.message, reaction))
 
 				# Если пришло такое сообщение это значит я перед этим отправил лайк с сообщением, типа тоже исходящий лайк ивент вот да
 				elif event.message.message == "Лайк отправлен, ждем ответа.":
-					await self.app.onReaction(ReactionType.LIKE)
+					await self.app.onAction(ActionType.LIKE)
 
 				# Чекаем что если сообщение это спам
 				else:
