@@ -1,7 +1,7 @@
 import re
 
-from telethon.types import Message
 from telethon import TelegramClient, events
+from telethon.types import Message, ReactionEmoji
 from telethon.tl.functions.messages import SendReactionRequest
 
 from datatypes import ActionType
@@ -31,7 +31,7 @@ class Bot:
 		await self.client( SendReactionRequest(
 			peer = message.peer_id,
 			msg_id = message.id,
-			reaction = reaction
+			reaction = ReactionEmoji(reaction)
 		))
 
 	def _defineListeners(self):
