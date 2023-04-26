@@ -1,8 +1,8 @@
 import re
 
 from telethon import TelegramClient, events
-from telethon.types import Message, ReactionEmoji
 from telethon.tl.functions.messages import SendReactionRequest
+from telethon.types import Message, ReactionEmoji, ReactionEmpty
 
 from datatypes import ActionType
 import app
@@ -27,25 +27,30 @@ class Bot:
 
 		await self.client.run_until_disconnected()
 
-	async def _sendReaction(self, message: Message, reaction: str):
+	async def _sendReaction(self, message: Message, emoticon: str):
+		if emoticon is None:
+			reaction = ReactionEmpty()
+		else:
+			reaction = ReactionEmoji(emoticon)
+
 		await self.client( SendReactionRequest(
 			peer = message.peer_id,
 			msg_id = message.id,
-			reaction = [ReactionEmoji(reaction)]
+			reaction = [reaction]
 		))
 
 	def _defineListeners(self):
 		@self.client.on(events.MessageEdited(chats=self.app.config["chatId"]))
 		async def onMessageEdit(event: events.MessageEdited.Event):
 			if not event.message.reactions.recent_reactions is None:
-				reaction = event.message.reactions.recent_reactions[0].reaction.emoticon
+				emoticon = event.message.reactions.recent_reactions[0].reaction.emoticon
 			else:
-				reaction = ""
+				emoticon = None
 
 			await self.app.onReaction(
-				reaction,
+				emoticon,
 				event.message.message,
-				lambda reaction: self._sendReaction(event.message, reaction)
+				lambda emoticon: self._sendReaction(event.message, emoticon)
 			)
 				
 		@self.client.on(events.NewMessage(chats=self.app.config["chatId"]))
@@ -62,7 +67,7 @@ class Bot:
 			else:
 				# Если это сообщение с анкетой, чекаем регуляркой
 				if self.profileMessageRegex.match(event.message.message):
-					await self.app.onProfileRaw(event.message.message, lambda reaction: self._sendReaction(event.message, reaction))
+					await self.app.onProfileRaw(event.message.message, lambda emoticon: self._sendReaction(event.message, emoticon))
 
 				# Если пришло такое сообщение это значит я перед этим отправил лайк с сообщением, типа тоже исходящий лайк ивент вот да
 				elif event.message.message == "Лайк отправлен, ждем ответа.":
