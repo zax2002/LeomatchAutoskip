@@ -219,7 +219,7 @@ class App:
 			await asyncio.sleep(1)
 			await reactionCallback(self.config["reactionControls"]["success"])
 			await asyncio.sleep(1)
-			await reactionCallback("")
+			await reactionCallback(None)
 
 	# ----------------------------------------------------------------------------------------------
 
