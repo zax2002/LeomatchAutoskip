@@ -1,25 +1,29 @@
 import re
 import os
+import json5
+import asyncio
 import sqlite3
 import hashlib
-import json5
+import platform
 import collections
-import asyncio
 
 from enum import Enum
 from threading import Lock
 from telethon import TelegramClient, events
 from telethon.tl.functions.messages import SendReactionRequest
 
+
 class ProfileType(Enum):
 	LIKING = 0
 	DISLIKING = 1
 	MISSED = 2
 
+
 class ActionType(Enum):
 	LIKE = 0
 	DISLIKE = 1
 	MISS = 2
+
 
 class Profile:
 	def __init__(self, text, typeId=None):
@@ -34,11 +38,14 @@ class Profile:
 	def setTypeFromId(self, typeId):
 		self.type = ProfileType(typeId) if not typeId is None else None
 
+
 class App:
 	def __init__(self):
-		if os.name == "nt":
+		if os.name == "nt" and platform.version().startswith("10"):
 			import win10toast
 			self.toastNotifier = win10toast.ToastNotifier()
+		else:
+			self.toastNotifier = None
 
 		self.connection = sqlite3.connect("profies.db", check_same_thread=False)
 		with open("schema.sql", "r") as f:
@@ -253,7 +260,7 @@ class App:
 		print("Action DISLIKE")
 
 	async def _alert(self, title, text):
-		if os.name == "nt":
+		if self.toastNotifier is not None:
 			self.toastNotifier.show_toast(title, text, duration=5, threaded=True)
 		
 		print(f"Action ALERT {text}")
