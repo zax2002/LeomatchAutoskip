@@ -38,7 +38,7 @@ class Bot:
 		@self.client.on(events.MessageEdited(chats=self.app.config["chatId"]))
 		async def onMessageEdit(event: events.MessageEdited.Event):
 			if not event.message.reactions.recent_reactions is None:
-				reaction = event.message.reactions.recent_reactions[0].reaction
+				reaction = event.message.reactions.recent_reactions[0].reaction.emoticon
 			else:
 				reaction = ""
 
