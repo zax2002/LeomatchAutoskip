@@ -31,7 +31,7 @@ class Bot:
 		await self.client( SendReactionRequest(
 			peer = message.peer_id,
 			msg_id = message.id,
-			reaction = ReactionEmoji(reaction)
+			reaction = [ReactionEmoji(reaction)]
 		))
 
 	def _defineListeners(self):
