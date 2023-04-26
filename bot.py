@@ -1,13 +1,15 @@
 import re
 
+from telethon.types import Message
 from telethon import TelegramClient, events
 from telethon.tl.functions.messages import SendReactionRequest
 
 from datatypes import ActionType
+import app
 
 
 class Bot:
-	def __init__(self, app, sessionFile, apiId, apiHash):
+	def __init__(self, app: 'app.App', sessionFile: str, apiId: int, apiHash: str):
 		self.app = app
 
 		self.sessionFile = sessionFile
@@ -25,7 +27,7 @@ class Bot:
 
 		await self.client.run_until_disconnected()
 
-	async def _sendReaction(self, message, reaction):
+	async def _sendReaction(self, message: Message, reaction: str):
 		await self.client( SendReactionRequest(
 			peer = message.peer_id,
 			msg_id = message.id,
@@ -34,7 +36,7 @@ class Bot:
 
 	def _defineListeners(self):
 		@self.client.on(events.MessageEdited(chats=self.app.config["chatId"]))
-		async def onMessageEdit(event):
+		async def onMessageEdit(event: events.MessageEdited.Event):
 			if not event.message.reactions.recent_reactions is None:
 				reaction = event.message.reactions.recent_reactions[0].reaction
 			else:
@@ -47,7 +49,7 @@ class Bot:
 			)
 				
 		@self.client.on(events.NewMessage(chats=self.app.config["chatId"]))
-		async def onMessage(event):
+		async def onMessage(event: events.NewMessage.Event):
 			# Исходящие вообщения когда я чёто делаю
 			if event.out:
 				if event.message.message == "👎":

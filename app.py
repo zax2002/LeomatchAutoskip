@@ -1,3 +1,4 @@
+from typing import Callable
 import collections
 import threading
 import platform
@@ -29,7 +30,7 @@ class App:
 		self.config = json5.load(open("config.json", encoding="utf-8"))
 		self.spamPatterns = json5.load(open("spam.json", encoding="utf-8"))
 
-		self.history = collections.deque(maxlen=10)
+		self.history: collections.deque[Profile] = collections.deque(maxlen=10)
 
 		self.bot = Bot(self, self.config["sessionFile"], self.config["apiId"], self.config["apiHash"])
 
@@ -74,7 +75,7 @@ class App:
 			except Exception as e:
 				print(e)
 
-	async def getProfile(self, text):
+	async def getProfile(self, text: str):
 		cursor = self.connection.cursor()
 		profile = Profile(text)
 
@@ -88,7 +89,7 @@ class App:
 
 		return profile
 
-	async def addOrUpdateProfile(self, profile):
+	async def addOrUpdateProfile(self, profile: Profile):
 		cursor = self.connection.cursor()
 
 		with self.dbLock:
@@ -99,7 +100,7 @@ class App:
 
 			self.connection.commit()
 
-	async def miss(self, index):
+	async def miss(self, index: int):
 		profile = self.history[-index - 1]
 		profile = Profile(profile.text, ProfileType.MISSED)
 
@@ -107,7 +108,7 @@ class App:
 
 		print(f'Marked "{profile.text}" as missed')
 
-	async def missText(self, text):
+	async def missText(self, text: str):
 		profile = Profile(text, ProfileType.MISSED)
 
 		await self.addOrUpdateProfile(profile)
@@ -116,7 +117,7 @@ class App:
 
 	# ----------------------------------------------------------------------------------------------
 
-	async def onProfileRaw(self, text, reactionCallback):
+	async def onProfileRaw(self, text: str, reactionCallback: Callable):
 		text = self.locationRegex.sub(f', {self.config["city"]}', text)
 
 		profile = await self.getProfile(text)
@@ -178,7 +179,7 @@ class App:
 		if not reaction is None:
 			await reactionCallback(reaction)
 
-	async def onAction(self, actionType):
+	async def onAction(self, actionType: ActionType):
 		print(f"Action {actionType}")
 
 		if len(self.history) == 0:
@@ -197,7 +198,7 @@ class App:
 
 		await self.addOrUpdateProfile(profile)
 
-	async def onReaction(self, reaction, text, reactionCallback):
+	async def onReaction(self, reaction: str, text: str, reactionCallback: Callable):
 		if not self.config["reactionControls"]["enabled"]:
 			return
 
@@ -232,7 +233,7 @@ class App:
 
 		print("Action DISLIKE")
 
-	async def _alert(self, title, text):
+	async def _alert(self, title: str, text: str):
 		if self.toastNotifier is not None:
 			self.toastNotifier.show_toast(title, text, duration=5, threaded=True)
 		
@@ -243,10 +244,10 @@ class App:
 
 	# ----------------------------------------------------------------------------------------------
 
-	async def message(self, message):
+	async def message(self, message: str):
 		await self.bot.client.send_message(self.config["chatId"], message)
 
-	def checkSpam(self, message):
+	def checkSpam(self, message: str):
 		for spamSubstring, spamReply in self.spamPatterns:
 			if spamSubstring in message:
 				return spamReply

@@ -15,7 +15,7 @@ class ActionType(Enum):
 
 
 class Profile:
-	def __init__(self, text, typeId=None):
+	def __init__(self, text: str, typeId: ProfileType | int = None):
 		self.text = text
 		self.textHash = hashlib.md5(self.text.encode("utf-8")).digest()
 
@@ -24,5 +24,5 @@ class Profile:
 		else:
 			self.setTypeFromId(typeId)
 
-	def setTypeFromId(self, typeId):
+	def setTypeFromId(self, typeId: int):
 		self.type = ProfileType(typeId) if not typeId is None else None
