@@ -19,7 +19,7 @@
 	},
 	"onDisliking": {
 		"action": "dislike",
-		"reaction": false
+		"reaction": null
 	},
 	"onMissed": {
 		"action": "alert",
@@ -27,7 +27,7 @@
 	},
 	"onNew": {
 		"action": "pass",
-		"reaction": false
+		"reaction": null
 	},
 
 	// Управление реакциями
