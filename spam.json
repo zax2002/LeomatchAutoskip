@@ -2,12 +2,17 @@
 // ["часть сообщения чтоб определить мусор", "ответ"]
 [
 	["Дайвинчик всегда доступен в VK и Telegram", "Анкеты в Telegram"],
-	["Do you want more views on TikTok", "Continue looking"],
-	["Keep in mind: some people can impersonate others", "Continue looking"],
+	
 	["Помни, что в интернете люди могут выдавать себя за других", "Продолжить просмотр анкет"],
-	["Share your location to see profiles near you", "Continue looking"],
+	["Keep in mind: some people can impersonate others", "Continue looking"],
+	
 	["Пришли свое расположение и увидишь анкеты рядом с тобой", "Продолжить смотреть анкеты"],
+	["Share your location to see profiles near you", "Continue looking"],
+
 	[", хочешь меня бесплатно?", "Нет"],
+
 	[", хочешь больше просмотров в TikTok?", "Продолжить просмотр анкет"],
+	["Do you want more views on TikTok", "Continue looking"],
+
 	["Хочешь проверить свой уровень мышления", "Не хочу"],
 ]
