@@ -14,6 +14,8 @@ from datatypes import ActionType, Profile, ProfileType
 
 
 class App:
+	DATABASE_FILEPATH = "./profiles.db"
+
 	def __init__(self):
 		if os.name == "nt" and platform.version().startswith("10"):
 			import win10toast
@@ -21,7 +23,11 @@ class App:
 		else:
 			self.toastNotifier = None
 
-		self.connection = sqlite3.connect("profies.db", check_same_thread=False)
+		# backward compatibility with a typo
+		if os.path.isfile("profies.db"):
+			self.DATABASE_FILEPATH = "profies.db"
+
+		self.connection = sqlite3.connect(self.DATABASE_FILEPATH, check_same_thread=False)
 		with open("schema.sql", "r") as f:
 			self.connection.executescript(f.read())
 
