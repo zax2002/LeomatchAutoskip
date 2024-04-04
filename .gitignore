@@ -163,3 +163,5 @@ cython_debug/
 *.session
 *.session-journal
 config.json
+
+.vscode
