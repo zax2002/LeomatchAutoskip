@@ -1,3 +1,4 @@
+import os
 import re
 
 from telethon import TelegramClient, events
@@ -19,6 +20,8 @@ class Bot:
 		self.profileMessageRegex = re.compile(r"^.*, \d+, (\S+|📍\d+ km|📍\d+ км)( – .*|)$", re.S)
 
 	async def start(self):
+		os.makedirs(os.path.dirname(self.sessionFile), exist_ok=True)
+
 		self.client = TelegramClient(self.sessionFile, self.apiId, self.apiHash)
 		await self.client.start()
 
