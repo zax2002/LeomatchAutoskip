@@ -1,28 +1,32 @@
 import os
 import re
 
-from telethon import TelegramClient, events
-from telethon.tl.functions.messages import SendReactionRequest
-from telethon.types import Message, ReactionEmoji, ReactionEmpty
+from telethon import events # type: ignore
+from telethon.tl.functions.messages import SendReactionRequest # type: ignore
+from telethon.types import Message, ReactionEmoji, ReactionEmpty # type: ignore
+from opentele.tl import TelegramClient # type: ignore
+from opentele.api import API # type: ignore
 
 from datatypes import ActionType
 import app
 
 
 class Bot:
-	def __init__(self, app: 'app.App', sessionFile: str, apiId: int, apiHash: str):
+	def __init__(self, app: 'app.App', sessionFile: str):
 		self.app = app
 
 		self.sessionFile = sessionFile
-		self.apiId = apiId
-		self.apiHash = apiHash
 
 		self.profileMessageRegex = re.compile(r"^.*, \d+, (\S+|📍\d+ km|📍\d+ км)( – .*|)$", re.S)
 
 	async def start(self):
 		os.makedirs(os.path.dirname(self.sessionFile), exist_ok=True)
 
-		self.client = TelegramClient(self.sessionFile, self.apiId, self.apiHash)
+		self.client = TelegramClient(self.sessionFile,
+			api = API.TelegramDesktop(
+				app_version="6.0.2 x64"
+			)
+		)
 		await self.client.start()
 
 		self._defineListeners()
@@ -58,7 +62,7 @@ class Bot:
 				
 		@self.client.on(events.NewMessage(chats=self.app.config["chatId"]))
 		async def onMessage(event: events.NewMessage.Event):
-			# Исходящие вообщения когда я чёто делаю
+			# Исходящие сообщения когда я чёто делаю
 			if event.out:
 				if event.message.message == "👎":
 					await self.app.onAction(ActionType.DISLIKE)

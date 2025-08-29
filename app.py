@@ -7,7 +7,7 @@ import sqlite3
 import os
 import re
 
-import json5
+import json5 # type: ignore
 
 from bot import Bot
 from datatypes import ActionType, Profile, ProfileType
@@ -16,9 +16,9 @@ from datatypes import ActionType, Profile, ProfileType
 class App:
 	DATABASE_FILEPATH = "./profiles.db"
 
-	def __init__(self):
+	def __init__(self) -> None:
 		if os.name == "nt" and platform.version().startswith("10"):
-			import win10toast
+			import win10toast # type: ignore
 			self.toastNotifier = win10toast.ToastNotifier()
 		else:
 			self.toastNotifier = None
@@ -38,7 +38,7 @@ class App:
 
 		self.history: collections.deque[Profile] = collections.deque(maxlen=10)
 
-		self.bot = Bot(self, self.config["sessionFile"], self.config["apiId"], self.config["apiHash"])
+		self.bot = Bot(self, self.config["sessionFile"])
 
 	async def start(self):
 		self.locationRegex = re.compile(f", 📍\d+ (km|км)")
